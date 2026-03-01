@@ -1,78 +1,169 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <title>Biblo – Dein Bibelbegleiter</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f7f3e9;
-      text-align: center;
-      padding: 50px;
-    }
-    h1 {
-      color: #2c3e50;
-    }
-    textarea {
-      width: 80%;
-      height: 100px;
-      margin-top: 20px;
-      padding: 10px;
-      font-size: 16px;
-    }
-    button {
-      margin-top: 10px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    button:hover {
-      background-color: #2980b9;
-    }
-    #response {
-      margin-top: 30px;
-      background-color: #ecf0f1;
-      padding: 20px;
-      border-radius: 10px;
-      text-align: left;
-      width: 80%;
-      margin-left: auto;
-      margin-right: auto;
-      min-height: 50px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Biblo – Dein Bibelbegleiter</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f7f7f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .chat-container {
+    width: 400px;
+    height: 650px;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .daily-verse {
+    background-color: #f1f3f5;
+    padding: 10px;
+    text-align: center;
+    font-style: italic;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .chat-header {
+    padding: 15px;
+    background-color: #343541;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+  }
+
+  .chat-messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .message {
+    max-width: 80%;
+    padding: 10px 15px;
+    margin: 5px 0;
+    border-radius: 15px;
+    word-wrap: break-word;
+  }
+
+  .user {
+    align-self: flex-end;
+    background-color: #1a73e8;
+    color: white;
+  }
+
+  .bot {
+    align-self: flex-start;
+    background-color: #e5e5ea;
+    color: black;
+  }
+
+  .chat-input {
+    display: flex;
+    border-top: 1px solid #ddd;
+  }
+
+  .chat-input textarea {
+    flex: 1;
+    border: none;
+    padding: 10px;
+    font-size: 16px;
+    resize: none;
+  }
+
+  .chat-input button {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    padding: 0 20px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+
+  .chat-input button:hover {
+    background-color: #155bb5;
+  }
+</style>
 </head>
 <body>
-  <h1>Biblo – Dein Bibelbegleiter</h1>
-  <textarea id="question" placeholder="Stelle deine Frage an Biblo..."></textarea><br>
-  <button onclick="askAI()">Frage stellen</button>
-  <div id="response">Antwort erscheint hier...</div>
+  <div class="chat-container">
+    <div class="daily-verse" id="dailyVerse"></div>
+    <div class="chat-header">Biblo – Dein Bibelbegleiter</div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+      <textarea id="userInput" placeholder="Schreibe deine Frage..."></textarea>
+      <button onclick="sendMessage()">Senden</button>
+    </div>
+  </div>
 
   <script>
-    async function askAI() {
-      const question = document.getElementById("question").value;
-      const responseElement = document.getElementById("response");
-      responseElement.innerText = "Biblo denkt... ⏳";
+    // Liste der Bibelverse
+    const bibleVerses = [
+      "Psalm 23:1 – Der Herr ist mein Hirte; mir wird nichts mangeln.",
+      "Philipper 4:13 – Ich vermag alles durch den, der mich mächtig macht.",
+      "Johannes 14:6 – Ich bin der Weg und die Wahrheit und das Leben.",
+      "Matthäus 11:28 – Kommt her zu mir, alle, die ihr mühselig und beladen seid.",
+      "Jesaja 41:10 – Fürchte dich nicht, denn ich bin mit dir.",
+      "Psalm 46:1 – Gott ist unsre Zuflucht und Stärke, ein bewährter Helfer in Nöten.",
+      "Römer 8:28 – Wir wissen aber, dass denen, die Gott lieben, alle Dinge zum Besten dienen."
+    ];
 
-      const response = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer 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"
-        },
-        body: JSON.stringify({
-          model: "gpt-4.1-mini",
-          input: "Du bist Biblo, ein freundlicher und bibeltreuer Bibelbegleiter. Hilf den Menschen, eine tiefere Beziehung zu Jesus zu entwickeln. Frage: " + question
-        })
-      });
+    // Zufälligen Bibelvers bei Seitenladezeit anzeigen
+    function showDailyVerse() {
+      const index = Math.floor(Math.random() * bibleVerses.length);
+      document.getElementById("dailyVerse").innerText = bibleVerses[index];
+    }
 
-      const data = await response.json();
-      const answer = data.output?.[0]?.content?.[0]?.text || "Biblo konnte leider keine Antwort geben.";
-      responseElement.innerText = answer;
+    showDailyVerse(); // sofort aufrufen
+
+    // Mock-Antworten für Biblo
+    const mockResponses = [
+      "Biblo sagt: ‚Denke daran, Gott ist immer bei dir.‘",
+      "Biblo sagt: ‚Ein Vers aus der Bibel kann dir heute helfen.‘",
+      "Biblo sagt: ‚Gebet kann dir Kraft geben. Versuch es jetzt.‘",
+      "Biblo sagt: ‚Liebe und Geduld sind der Weg zu Frieden.‘",
+      "Biblo sagt: ‚Manchmal ist Stille der beste Ort, um zu hören, was Gott sagt.‘"
+    ];
+
+    function sendMessage() {
+      const input = document.getElementById("userInput");
+      const chat = document.getElementById("chatMessages");
+      const question = input.value.trim();
+      if (!question) return;
+
+      // User-Nachricht
+      const userMsg = document.createElement("div");
+      userMsg.className = "message user";
+      userMsg.innerText = question;
+      chat.appendChild(userMsg);
+      chat.scrollTop = chat.scrollHeight;
+
+      input.value = "";
+
+      // Bot-Platzhalter
+      const botMsg = document.createElement("div");
+      botMsg.className = "message bot";
+      botMsg.innerText = "Biblo denkt... ⏳";
+      chat.appendChild(botMsg);
+      chat.scrollTop = chat.scrollHeight;
+
+      // Antwort nach 1-2 Sekunden
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * mockResponses.length);
+        botMsg.innerText = mockResponses[randomIndex];
+        chat.scrollTop = chat.scrollHeight;
+      }, 1000 + Math.random() * 1000);
     }
   </script>
 </body>
